@@ -1,0 +1,154 @@
+<html>
+<header>
+	<script></script>
+	<style>
+	.container {
+		width: 500px;
+		border: 1px solid #aaa;
+		position: absolute;
+		left: 20%;
+	}
+	
+	.container2 {
+		width: 500px;
+		border: 1px solid #aaa;
+		position: absolute;
+		left: 50%;
+		top: 50%;
+	}
+	</style>
+</header>
+
+<body>
+<form action="">
+	<input type="text" class="i1">
+	<input type="text" class="i2">
+	<button>ok</button>
+</form>
+	<div class="container"></div>
+	<div class="container2"></div>
+</body>
+<script src="jquery-1.11.2.js"></script>
+<script src="raphael.js"></script>
+<script src="raphael.free_transform.js"></script>
+<script src="app.js"></script>
+<script>
+
+// Creates circle at x = 125, y = 125, with radius 50
+
+var circle = paper.circle(125, 125, 50); // Sets the fill attribute of the circle to red (#f00)
+circle.attr("fill", "blue");
+// Sets the stroke attribute of the circle to white
+circle.attr("stroke", "#fff");
+// Creates rectangle at x = 5, y = 5, with width and height = 50
+var rectangle = paper.rect(5, 5, 50, 50);
+rectangle.attr("fill", "green");
+// Creates ellipse at x and y = 180 ,horizontal-axis = 20 and vertical-axis = 30
+var ellipse = paper.ellipse(180, 180, 20, 30);
+ellipse.attr("fill", "red");
+// draw a diagonal line:
+// move to 10,10, line to 90,90
+var path = paper.path("M10 10 L 190 190");
+// Sets the stroke attribute of the path to red
+path.attr("stroke", "red");
+// Sets the stroke-width attribute of the path to 3.
+path.attr("stroke-width", "3");
+
+
+paper.add([{
+	type: "circle",
+	cx: 10,
+	cy: 10,
+	r: 5
+}, {
+	type: "rect",
+	x: 50,
+	y: 50,
+	width: 10,
+	height: 10,
+	fill: "#fc0"
+}]);
+
+
+for (var i = 0; i < 5; i += 1) {
+	var multiplier = i * 5;
+	paper.circle(250 + (2 * multiplier), 100 + multiplier, 50 - multiplier);
+}
+
+var tetronimo = paper.path("M 250 250 l 0 -50 l -50 0 l 0 -50 l -50 0 l 0 50 l -50 0 l 0 50 z");
+tetronimo.attr({
+	gradient: '90-#526c7a-#64a0c1',
+	stroke: '#3b4449',
+	'stroke-width': 10,
+	'stroke-linejoin': 'round',
+	transform: "r30"
+});
+
+var animation1 = Raphael.animation({
+	transform: "r360"
+}, "2000", 'bounce');
+var animation2 = Raphael.animation({
+	transform: "r720"
+}, "2000", 'bounce');
+</script>
+<script>
+var paper2 = new Raphael(document.querySelector('.container2'), 500, 500);
+
+var circ = paper2.circle(250, 250, 20).attr({
+	fill: '#000'
+});
+var mood_text = paper2.text(250, 250, 'My\nMood').attr({
+	fill: '#fff'
+});
+var moods = ['Rubbish', 'Not Good', 'OK', 'Smily', 'Positively Manic'];
+var colors = ['#cc0000', '#a97e22', '#9f9136', '#7c9a2d', '#3a9a2d'];
+
+//pick a mood between 1 and 5, 1 being rubbish and 5 being positively manic
+var my_mood = 5;
+
+function show_mood() {
+
+
+	for (var i = 0; i < my_mood; i += 1) {
+		(function(i) {
+			setTimeout(function() {
+				paper2.circle(250, 250, 20).attr({
+					stroke: 'none',
+					fill: colors[my_mood - 1]
+				}).animate({
+					transform: 't0 ' + (-42 * (i + 1))
+				}, 2000, 'bounce').toBack();
+			}, 50 * i);
+		})(i);
+	}
+	paper2.text(250, 300, moods[my_mood - 1]).attr({
+		fill: colors[my_mood - 1]
+	});
+
+	mood_text.node.onclick = function() {
+		return false;
+	}
+	circ.node.onclick = function() {
+		return false;
+	}
+
+}
+
+circ.node.onclick = show_mood;
+mood_text.node.onclick = show_mood;
+
+Raphael.el.red = function() {
+	return this.attr({
+		fill: "#c00"
+	})
+}
+Raphael.el.blue = function() {
+	return this.attr({
+		fill: "#0c0"
+	})
+}
+
+
+</script>
+
+</html>
