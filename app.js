@@ -48,11 +48,41 @@ function createSection(row, col, opts) {
     opts.h = h;
 
     st.info = opts
-    paper.freeTransform(st);
     return st;
 }
 
+// get set's transform as an array(or string?)
+function getSetFT(st) {
+
+    var ft = st.freeTransform;
+    if (!ft) return [];
+
+    var
+        center = {
+            x: ft.attrs.center.x + ft.offset.translate.x,
+            y: ft.attrs.center.y + ft.offset.translate.y
+        },
+        rotate = ft.attrs.rotate - ft.offset.rotate,
+        scale = {
+            x: ft.attrs.scale.x / ft.offset.scale.x,
+            y: ft.attrs.scale.y / ft.offset.scale.y
+        },
+        translate = {
+            x: ft.attrs.translate.x - ft.offset.translate.x,
+            y: ft.attrs.translate.y - ft.offset.translate.y
+        };
+
+    return [
+        'R', rotate, center.x, center.y,
+        'S', scale.x, scale.y, center.x, center.y,
+        'T', translate.x, translate.y
+    ];
+
+}
+
 function curvify(st, rate) {
+
+    var trans = getSetFT(st)
 
     var r = (140 / rate);
     var info = st.info;
@@ -65,15 +95,18 @@ function curvify(st, rate) {
 
 
     st.forEach(function(circ, i) {
+        if (i === 0) return;
         var x0 = circ.attr('cx');
         // dist between current seat to nearest end:
         var d2 = x0 - xa > d ? xb - x0 : x0 - xa;
         var a = Math.sqrt(r * r - Math.pow(d - d2, 2)) - Math.sqrt(r * r - d * d)
 
-        circ.animate({'transform': 't 0 ' + "-" + a}, 1000, 'bounce');
-        // circ.transform('t 0 ' + "-" + a);
+        circ.transformString = 't 0 ' + "-" + a;
 
+        circ.transform(trans + 't 0 ' + "-" + a);
+        console.log(circ.matrix)
     })
+
 }
 
 
@@ -84,11 +117,23 @@ $("form").submit(function(e) {
     hey = createSection(+$('.i1').val() || 5, +$('.i2').val() || 5)
 })
 
+$('.btn-tmp').click(function() {
+    curvify(hey, Math.random());
+
+    paper.freeTransform(hey, {
+        scale: false
+    });
+    // body...
+
+})
+
 setTimeout(function() {
 
     hey = createSection(5, 5);
-    setTimeout(function () {
-    	curvify(hey, .5);
+    setTimeout(function() {
+        curvify(hey, .5);
+
+
     }, 500)
-     
+
 }, 200)

@@ -899,7 +899,7 @@
 						'R', rotate, center.x, center.y,
 						'S', scale.x, scale.y, center.x, center.y,
 						'T', translate.x, translate.y
-					] + ft.items[i].transformString);
+					] + item.el.transformString);
 
 					asyncCallback([ 'apply' ]);
 
@@ -939,6 +939,7 @@
 						},
 						transformString: item.matrix.toTransformString()
 					});
+					item.transformString = item.matrix.toTransformString()
 				}
 			});
 		}
