@@ -15,6 +15,16 @@
 		factory(Raphael);
 	}
 }(this, function(Raphael) {
+
+	Raphael.st.childTransform = function(child, tf) {
+		if(!this.freeTransform) {		
+			return child.transform(tf);
+		}
+
+		return this.freeTransform.childTransform( child, tf);
+	}
+
+
 	Raphael.fn.freeTransform = function(subject, options, callback) {
 		var
 			ft, i, mapped, timeout,
@@ -857,35 +867,68 @@
 		ft.setOpts(options, callback);
 
 		/**
+		 * 我引入了两个属性:
+		 * ft.transformArray and el.transformString
+		 * for easier recording of two distinct yet related transformation
+		 * when childTransform(), element will transform(two phases added) and el.transformString will be stored
+		 * when ft.apply(), ft.transformArray will be recalculated 
+		 */
+
+		/**
+		 *	childTransform() will do parent's transformation as well as child's
+		 *	it stores child specific transformation info, which is used inside `ft.apply`
+		 *	note: child should be inside a set
+		 *	use case: st.freeTransform.childTransform(st[0], 't -100 0');
+		 *	or simplified : st.childTransform(..)
+		 */
+		ft.childTransform = function(child, tf) {
+			// `child` is a Raphael element
+			if(!ft.transformArray) {
+				ft.transformArray = [];
+				return;
+				// throw new Error("should have transformArray");
+			}
+			child.transformString = tf;
+			child.transform( ft.transformArray + tf);
+		}
+		 
+
+		/**
 		 * Apply transformations, optionally update attributes manually
 		 */
 		ft.apply = function() {
+			var
+				center = {
+					x: ft.attrs.center.x + ft.offset.translate.x,
+					y: ft.attrs.center.y + ft.offset.translate.y
+				},
+				rotate    = ft.attrs.rotate - ft.offset.rotate,
+				scale     = {
+					x: ft.attrs.scale.x / ft.offset.scale.x,
+					y: ft.attrs.scale.y / ft.offset.scale.y
+				},
+				translate = {
+					x: ft.attrs.translate.x - ft.offset.translate.x,
+					y: ft.attrs.translate.y - ft.offset.translate.y
+				};
+			// transform array:
+			var transformArray = [
+				'R', rotate, center.x, center.y,
+				'S', scale.x, scale.y, center.x, center.y,
+				'T', translate.x, translate.y
+			];
+			// recalculated everytime we apply(), and we store it.
+			ft.transformArray = transformArray;
+
 			ft.items.map(function(item, i) {
 				// Take offset values into account
-				var
-					center = {
-						x: ft.attrs.center.x + ft.offset.translate.x,
-						y: ft.attrs.center.y + ft.offset.translate.y
-					},
-					rotate    = ft.attrs.rotate - ft.offset.rotate,
-					scale     = {
-						x: ft.attrs.scale.x / ft.offset.scale.x,
-						y: ft.attrs.scale.y / ft.offset.scale.y
-					},
-					translate = {
-						x: ft.attrs.translate.x - ft.offset.translate.x,
-						y: ft.attrs.translate.y - ft.offset.translate.y
-					};
+				
 
 				if ( ft.opts.animate ) {
 					asyncCallback([ 'animate start' ]);
 
 					item.el.animate(
-						{ transform: [
-							'R', rotate, center.x, center.y,
-							'S', scale.x, scale.y, center.x, center.y,
-							'T', translate.x, translate.y
-						] + ft.items[i].transformString },
+						{ transform: transformArray + ft.items[i].transformString },
 						ft.opts.animate.delay,
 						ft.opts.animate.easing,
 						function() {
@@ -895,11 +938,7 @@
 						}
 					);
 				} else {
-					item.el.transform([
-						'R', rotate, center.x, center.y,
-						'S', scale.x, scale.y, center.x, center.y,
-						'T', translate.x, translate.y
-					] + item.el.transformString);
+					item.el.transform( transformArray + item.el.transformString);
 
 					asyncCallback([ 'apply' ]);
 

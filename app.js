@@ -47,7 +47,8 @@ function createSection(row, col, opts) {
     opts.w = w;
     opts.h = h;
 
-    st.info = opts
+    st.info = opts;
+    paper.freeTransform(st, {scale: false});
     return st;
 }
 
@@ -80,9 +81,11 @@ function getSetFT(st) {
 
 }
 
+
+
 function curvify(st, rate) {
 
-    var trans = getSetFT(st)
+    // var trans = getSetFT(st)
 
     var r = (140 / rate);
     var info = st.info;
@@ -100,11 +103,10 @@ function curvify(st, rate) {
         // dist between current seat to nearest end:
         var d2 = x0 - xa > d ? xb - x0 : x0 - xa;
         var a = Math.sqrt(r * r - Math.pow(d - d2, 2)) - Math.sqrt(r * r - d * d)
-
-        circ.transformString = 't 0 ' + "-" + a;
-
-        circ.transform(trans + 't 0 ' + "-" + a);
-        console.log(circ.matrix)
+        
+        // 基本上curvify、skew等都是在set上的，而且已经freeTransform过
+        st.childTransform( circ,  't 0 ' + "-" + a );
+        
     })
 
 }
@@ -120,20 +122,12 @@ $("form").submit(function(e) {
 $('.btn-tmp').click(function() {
     curvify(hey, Math.random());
 
-    paper.freeTransform(hey, {
-        scale: false
-    });
-    // body...
-
 })
 
 setTimeout(function() {
 
-    hey = createSection(5, 5);
-    setTimeout(function() {
-        curvify(hey, .5);
-
-
-    }, 500)
+    hey = createSection(5, 5);    
+    
+    curvify(hey, .5);
 
 }, 200)
