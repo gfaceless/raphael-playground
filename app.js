@@ -124,6 +124,10 @@ function getSetFT(st) {
 function curvify(st, level) {
     var info = st.info;
     level = +level;
+
+    // 凸1 凹0
+    var dir = level >= 0 ? 1:0;
+    level = Math.abs(level);
     // restore:
     if (level === 0) {
         st.forEach(function(item, i) {
@@ -142,23 +146,24 @@ function curvify(st, level) {
     var modifier = .7;
 
     // distance between the first circle's center and the last circle's center (of the same row)
-    var e2e = (info.w - 2 * info.p - 2 * info.r);
+    var e2e = (info.w);
     // half of end to end distance 
     var d = e2e / 2;
     // 虚拟弧线的半径 越小弯曲的程度越明显
     var r = d / (level / 3) / modifier;
-    // first seat's cx
-    var xa = info.p + info.r;
-    var xb = info.w - (info.p + info.r);
-
+    
+    // 弧线的起終
+    var xa = 0, xb = info.w;
 
     st.forEach(function(item, i) {
         // if (i === 0) return;
         if (item.type == 'path') {
-            var arcStr = Raphael.fullfill("M0 0a{r} {r} 0 0 1 {w} 0v{h}a{r} {r} 0 0 0 -{w} 0z", {
+            var arcStr = Raphael.fullfill("M0 0a{r} {r} 0 0 {dir} {w} 0v{h}a{r} {r} 0 0 {dir2} -{w} 0z", {
                 w: info.w,
                 h: info.h,
-                r: r
+                r: r,
+                dir: dir,
+                dir2: Math.abs(dir-1)
             });
             item.attr('path', arcStr);
 
@@ -170,9 +175,9 @@ function curvify(st, level) {
         // dist between current seat to nearest end:
         var d2 = x0 - xa > d ? xb - x0 : x0 - xa;
         var translateY = Math.sqrt(r * r - Math.pow(d - d2, 2)) - Math.sqrt(r * r - d * d)
-
+        
         // 基本上curvify、skew等都是在set上的，而且已经freeTransform过
-        st.childTransform(item, 't 0 ' + -translateY);
+        st.childTransform(item, 't 0 ' + (dir ? -translateY: translateY));
 
     })
 
