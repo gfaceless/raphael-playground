@@ -16,13 +16,38 @@
 	}
 }(this, function(Raphael) {
 
-	Raphael.st.childTransform = function(child, tf) {
-		if(!this.freeTransform) {		
-			return child.transform(tf);
-		}
+	
+	/**
+	 * modified by wangxi
+	 * date: 2015-03-24
+	 *
+	 */
 
-		return this.freeTransform.childTransform( child, tf);
+	var _transfrom = Raphael.el.transform;
+	function tmp (transformations) {
+		var ret = "";
+		for (var prop in transformations) {
+			if (transformations.hasOwnProperty(prop)) {
+				ret += transformations[prop];
+			}
+		}
+		return ret;
 	}
+	Raphael.el.transform = function(tf, st, name) {
+		if(!st) {
+			return _transfrom.call(this, tf);
+		}
+		// name is like `curvify`, 'skew', 'shear'
+		name = name || "default";
+		this.transformations = this.transformations || {};
+		this.transformations[name] = tf;
+
+		// `stTf`: set's transform info
+		// TODO: consider store `transformation` in st.info
+		var stTf = st.freeTransform.transformation || "";
+		_transfrom.call(this, stTf + tmp(this.transformations));
+		
+	};
 
 
 	Raphael.fn.freeTransform = function(subject, options, callback) {
@@ -868,30 +893,12 @@
 
 		/**
 		 * 我引入了两个属性:
-		 * ft.transformArray and el.transformString
+		 * ft.transformation and el.transformString
 		 * for easier recording of two distinct yet related transformation
-		 * when childTransform(), element will transform(two phases added) and el.transformString will be stored
-		 * when ft.apply(), ft.transformArray will be recalculated 
+		 * when transform(), element will transform(multi-phases added) and el.transformString will be stored
+		 * when ft.apply(), ft.transformation will be recalculated
 		 */
 
-		/**
-		 *	childTransform() will do parent's transformation as well as child's
-		 *	it stores child specific transformation info, which is used inside `ft.apply`
-		 *	note: child should be inside a set
-		 *	use case: st.freeTransform.childTransform(st[0], 't -100 0');
-		 *	or simplified : st.childTransform(..)
-		 */
-		ft.childTransform = function(child, tf) {
-			// `child` is a Raphael element
-			if(!ft.transformArray) {
-				ft.transformArray = [];
-				return;
-				// throw new Error("should have transformArray");
-			}
-			child.transformString = tf;
-			child.transform( ft.transformArray + tf);
-		}
-		 
 
 		/**
 		 * Apply transformations, optionally update attributes manually
@@ -912,23 +919,24 @@
 					y: ft.attrs.translate.y - ft.offset.translate.y
 				};
 			// transform array:
-			var transformArray = [
+			// recalculated everytime we apply(), and we store it.
+			ft.transformation = [
 				'R', rotate, center.x, center.y,
 				'S', scale.x, scale.y, center.x, center.y,
 				'T', translate.x, translate.y
 			];
-			// recalculated everytime we apply(), and we store it.
-			ft.transformArray = transformArray;
+			
 
 			ft.items.map(function(item, i) {
 				// Take offset values into account
-				
 
+				var el = item.el;
+				
 				if ( ft.opts.animate ) {
 					asyncCallback([ 'animate start' ]);
 
 					item.el.animate(
-						{ transform: transformArray + ft.items[i].transformString },
+						{ transform: ft.transformation + ft.items[i].transformString },
 						ft.opts.animate.delay,
 						ft.opts.animate.easing,
 						function() {
@@ -938,7 +946,12 @@
 						}
 					);
 				} else {
-					item.el.transform( transformArray + item.el.transformString);
+					// 我在el上引入了不少属性，原插件致力于绿色，
+					// 都在el/st.freeTransform.items里进行操作
+					// 我这样已经不支持热插拔了
+					// 考虑在scan处将transformString搞成transformations.default?
+					// default这保留字可以在低版本ie用么?
+					el.transform( ft.transformation + tmp(el.transformations));
 
 					asyncCallback([ 'apply' ]);
 
@@ -978,7 +991,6 @@
 						},
 						transformString: item.matrix.toTransformString()
 					});
-					item.transformString = item.matrix.toTransformString()
 				}
 			});
 		}
