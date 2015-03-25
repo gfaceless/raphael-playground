@@ -9,8 +9,9 @@ Raphael.fn.pannable = function() {
 	var w = paper.width;
 	var h = paper.height;
 
-	paper.rect(-10000,-10000, w*100, h*100)
-	.attr({"fill": "#f00", "fill-opacity": .2, cursor: "move"})
+	var n = 1e5;
+	paper.rect( -n, -n, n * 2, n * 2)
+	.attr({"fill": "#f00", "fill-opacity": .2/*, cursor: "move"*/})
 	.drag(onmove, onstart, onend)
 
 
@@ -52,32 +53,69 @@ Raphael.fn.zoomify = function() {
 
 	// zoom比例。可以理解为每次zoom out, viewBox将缩小为原来的0.9倍
 	var ratio = .9;
-	
+	// 初始zoom等级
+	var lvl = 0;
+	// 限定zoom等级-10至10
+	var limit = 10;
 
 	paper._viewBox = paper._viewBox || [0, 0, paper.width, paper.height];
 
 	$(paper.canvas).mousewheel (function(e) {
 			e.preventDefault();
-			var vb = paper._viewBox;
-			var x = vb[0], y=vb[1], w=vb[2], h=vb[3]
-			
-			var _ratio =  e.deltaY > 0 ? ratio : 1/ratio;
-			
-			var _vb =  {
-				x: x + (1- _ratio) * w / 2,
-				y: y + (1- _ratio) * h / 2,
-				w:  _ratio * w,
-				h:  _ratio * h
+			var newLvl = lvl + e.deltaY
+			if( Math.abs(newLvl) > limit) {
+				newLvl = newLvl > 0 ? limit : -limit;
 			}
+			console.log(e.deltaY, lvl, newLvl);
+			if(lvl === newLvl) return;
+
 			
-			paper.setViewBox( _vb.x, _vb.y, _vb.w, _vb.h);
-		
+			zoom( e.deltaY > 0 ? 1:-1, Math.abs(newLvl - lvl));
+			lvl = newLvl;
+
 	})
+
+	// TODO: export this function
+	function zoom (dir, step) {
+		console.log('here', dir, step);
+		
+		if(step === 0) return;
+		// step默认一次，但有的用户滚轮比较快，这时会捕捉到更大的deltaY，
+		// zoom即多次进行。
+		step = step || 1;
+		// 默认放大
+		dir = dir || 1;
+
+		var vb = paper._viewBox;
+		var x = vb[0], y=vb[1], w=vb[2], h=vb[3]
+		
+		var _ratio =  (dir===1) ? ratio : 1/ratio;
+		
+		var _vb =  {
+			x: x + (1- _ratio) * w / 2,
+			y: y + (1- _ratio) * h / 2,
+			w:  _ratio * w,
+			h:  _ratio * h
+		}
+		
+		paper.setViewBox( _vb.x, _vb.y, _vb.w, _vb.h);
+		
+		zoom(dir, --step);
+	}
+
+
+	return this;
 
 }
 
+// pan and zoom
+Raphael.fn.pnz = function() {
 
-paper.pannable().zoomify();
+	return this.pannable().zoomify()
+}
+
+
+paper.pnz();
 
 
 var defaults = {
